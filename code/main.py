@@ -187,6 +187,7 @@ def create_dataset(X, y, lookback):
 #    return datasets
 
 
+# Next improvement would be to find the closest two stations to the one we are predicting and use their data
 def get_historic_data(station_name, X, lookback=3):
     all_data = pd.read_csv("../data/bicikelj_train.csv")
     all_data["timestamp"] = pd.to_datetime(
