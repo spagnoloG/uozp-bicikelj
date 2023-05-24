@@ -3,6 +3,7 @@ import numpy as np
 import requests
 from datetime import datetime
 import time
+import os
 
 ljubljana_lat = 46.0569
 ljubljana_lon = 14.5058
@@ -123,6 +124,9 @@ def add_features(df):
 
 
 def generate_metadata(df):
+    # Check if the metadata file already exists
+    if os.path.isfile("../data/bicikelj_metadata.csv"):
+        return
     metadata_df = pd.DataFrame(df.copy(), columns=["timestamp"])
     metadata_df = add_features(metadata_df)
     metadata_df = apply_weather_data(metadata_df)
@@ -137,21 +141,44 @@ def generate_train_test_data(train_data, test_data):
     all_data = all_data.reset_index().rename(columns={"index": "timestamp"})
 
     generate_metadata(all_data)
-
     nan_indices = all_data[all_data.isna().any(axis=1)].index
 
-    test_indices = nan_indices.copy() - 2
-    test_indices = all_data.iloc[test_indices].copy()
-    train_indices = all_data.drop(test_indices.index).copy()
+    one_before_nan_indices = nan_indices.copy() - 2
+    one_before_nan_indices = one_before_nan_indices[1::2]
+
+    copy_of_test_indices = one_before_nan_indices.tolist()
+    for t_sample in one_before_nan_indices:
+        timestamp = all_data.iloc[t_sample]["timestamp"]
+        mask = (all_data["timestamp"] > timestamp - pd.Timedelta(hours=1)) & (
+            all_data["timestamp"] <= timestamp
+        )
+        first_entry = mask.idxmax()
+        copy_of_test_indices.append(first_entry)
+
+    copy_of_test_indices = pd.Index(copy_of_test_indices, dtype="int64")
+    copy_of_test_indices = copy_of_test_indices.sort_values()
+    print(copy_of_test_indices)
+
+    test_indices = all_data.iloc[copy_of_test_indices].copy()
+
+    copy_of_t_indices = one_before_nan_indices.tolist()
+    for t_sample in one_before_nan_indices:
+        timestamp = all_data.iloc[t_sample]["timestamp"]
+        mask = (all_data["timestamp"] > timestamp - pd.Timedelta(hours=2)) & (
+            all_data["timestamp"] <= timestamp
+        )
+        # Append only the indexes of the  all true values
+        copy_of_t_indices.extend(mask[mask].index.tolist())
+
+    copy_of_t_indices = pd.Index(copy_of_t_indices, dtype="int64")
+    copy_of_t_indices = copy_of_t_indices.sort_values()
+
+    train_indices = all_data.drop(copy_of_t_indices).copy()
 
     train_indices.dropna(inplace=True)
     test_indices.dropna(inplace=True)
     train_indices.to_csv("../data/bicikelj_train_indices.csv", index=False)
     test_indices.to_csv("../data/bicikelj_test_indices.csv", index=False)
-
-    # Read the metadata
-    metadata = pd.read_csv("../data/bicikelj_metadata.csv", parse_dates=["timestamp"])
-    print(metadata)
 
 
 def generate_prediction_data(train_data, test_data):

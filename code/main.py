@@ -14,7 +14,6 @@ from sklearn.model_selection import (
     cross_validate,
     GridSearchCV,
 )
-from sklearn.preprocessing import PolynomialFeatures
 from sklearn.base import BaseEstimator, RegressorMixin
 import matplotlib.pyplot as plt
 from enum import Enum
@@ -266,24 +265,24 @@ def get_historic_data(station_name, X, lookback=3):
     )
 
     # Extract the desired columns
-    subset = X[columns_to_transform]
+    #$subset = X[columns_to_transform]
 
-    # Create a PolynomialFeatures object with degree=2 (or any other desired degree)
-    poly = PolynomialFeatures(degree=2, include_bias=False)
+    #$# Create a PolynomialFeatures object with degree=2 (or any other desired degree)
+    #$poly = PolynomialFeatures(degree=2, include_bias=False)
 
-    # Fit and transform the selected features to generate polynomial features
-    polynomial_features = poly.fit_transform(subset)
+    #$# Fit and transform the selected features to generate polynomial features
+    #$polynomial_features = poly.fit_transform(subset)
 
-    # Convert the transformed features to a DataFrame
-    polynomial_features_df = pd.DataFrame(
-        polynomial_features, columns=poly.get_feature_names_out(subset.columns)
-    )
+    #$# Convert the transformed features to a DataFrame
+    #$polynomial_features_df = pd.DataFrame(
+    #$    polynomial_features, columns=poly.get_feature_names_out(subset.columns)
+    #$)
 
-    # Drop the original columns from X
-    X.drop(columns_to_transform, axis=1, inplace=True)
+    #$# Drop the original columns from X
+    #$X.drop(columns_to_transform, axis=1, inplace=True)
 
     # Join the polynomial features with the original dataset
-    X = X.join(polynomial_features_df)
+    #X = X.join(polynomial_features_df)
 
     return X
 
@@ -418,7 +417,13 @@ def main():
                 reg.fit(X_train, y_train)
                 y_pred = reg.predict(X_test)
                 y_pred = np.rint(y_pred)
-                print("coefs:", reg.coef_)
+
+                coef_dict = dict(zip(X_train.columns, reg.coef_))
+                sorted_coef = sorted(coef_dict.items(), key=lambda x: x[1], reverse=True)
+
+                print("Coefficients:")
+                for name, coef in sorted_coef:
+                    print("{}: {:.4f}".format(name, coef))
 
                 print("MAE:", mean_absolute_error(y_test, y_pred))
                 avg_mse = avg_mse + mean_absolute_error(y_test, y_pred)

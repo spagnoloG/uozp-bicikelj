@@ -2,6 +2,7 @@ import requests
 import math
 from itertools import combinations
 import pandas as pd
+import json
 
 API_KEY = "e82d48d0750049b087fa7175089fcb53"
 GEOCODE_URL = "https://api.opencagedata.com/geocode/v1/json"
@@ -130,6 +131,8 @@ def haversine(lat1, lon1, lat2, lon2):
 
 coordinates = {station: geocode(station) for station in bike_stations}
 
+with open("coordinates.json", "w") as f:
+    json.dump(coordinates, f)
 # Initialize an empty DataFrame with bike stations as row and column names
 distance_df = pd.DataFrame(columns=bike_stations, index=bike_stations)
 
